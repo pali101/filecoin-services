@@ -35,7 +35,15 @@ contract PandoraService is
         uint256 indexed dataSetId, address indexed oldStorageProvider, address indexed newStorageProvider
     );
     event FaultRecord(uint256 indexed dataSetId, uint256 periodsFaulted, uint256 deadline);
-    event DataSetRailsCreated(uint256 indexed dataSetId, uint256 pdpRailId, uint256 cacheMissRailId, uint256 cdnRailId, address payer, address payee, bool withCDN);
+    event DataSetRailsCreated(
+        uint256 indexed dataSetId,
+        uint256 pdpRailId,
+        uint256 cacheMissRailId,
+        uint256 cdnRailId,
+        address payer,
+        address payee,
+        bool withCDN
+    );
     event RailRateUpdated(uint256 indexed dataSetId, uint256 railId, uint256 newRate);
     event PieceMetadataAdded(uint256 indexed dataSetId, uint256 pieceId, string metadata);
 
@@ -71,8 +79,8 @@ contract PandoraService is
     uint256 public operatorCommissionBps;
 
     // Commission rates for different service types
-    uint256 public basicServiceCommissionBps;    // 0% for basic service (no CDN add-on)
-    uint256 public cdnServiceCommissionBps;      // 0% for CDN service
+    uint256 public basicServiceCommissionBps; // 0% for basic service (no CDN add-on)
+    uint256 public cdnServiceCommissionBps; // 0% for CDN service
 
     // Mapping from client address to clientDataSetId
     mapping(address => uint256) public clientDataSetIDs;
@@ -222,10 +230,10 @@ contract PandoraService is
         operatorCommissionBps = _initialOperatorCommissionBps;
         maxProvingPeriod = _maxProvingPeriod;
         challengeWindowSize = _challengeWindowSize;
-        
+
         // Set commission rates: 0% for basic, 0% for service w/ CDN add-on
-        basicServiceCommissionBps = 0;   // 0%
-        cdnServiceCommissionBps = 0;   // 0%
+        basicServiceCommissionBps = 0; // 0%
+        cdnServiceCommissionBps = 0; // 0%
 
         // Read token decimals from the USDFC token contract
         tokenDecimals = IERC20Metadata(_usdfcTokenAddress).decimals();
@@ -455,11 +463,7 @@ contract PandoraService is
             );
             info.cacheMissRailId = cacheMissRailId;
             railToDataSet[cacheMissRailId] = dataSetId;
-            payments.modifyRailLockup(
-                cacheMissRailId,
-                DEFAULT_LOCKUP_PERIOD,
-                0
-            );
+            payments.modifyRailLockup(cacheMissRailId, DEFAULT_LOCKUP_PERIOD, 0);
 
             cdnRailId = payments.createRail(
                 usdfcTokenAddress, // token address
@@ -471,15 +475,13 @@ contract PandoraService is
             );
             info.cdnRailId = cdnRailId;
             railToDataSet[cdnRailId] = dataSetId;
-            payments.modifyRailLockup(
-                cdnRailId,
-                DEFAULT_LOCKUP_PERIOD,
-                0
-            );
+            payments.modifyRailLockup(cdnRailId, DEFAULT_LOCKUP_PERIOD, 0);
         }
 
         // Emit event for tracking
-        emit DataSetRailsCreated(dataSetId, pdpRailId, cacheMissRailId, cdnRailId, createData.payer, creator, createData.withCDN);
+        emit DataSetRailsCreated(
+            dataSetId, pdpRailId, cacheMissRailId, cdnRailId, createData.payer, creator, createData.withCDN
+        );
     }
 
     /**
@@ -495,10 +497,7 @@ contract PandoraService is
     ) external onlyPDPVerifier {
         // Verify the data set exists in our mapping
         DataSetInfo storage info = dataSetInfo[dataSetId];
-        require(
-            info.pdpRailId != 0,
-            "Data set not registered with payment system"
-        );
+        require(info.pdpRailId != 0, "Data set not registered with payment system");
         (bytes memory signature) = abi.decode(extraData, (bytes));
 
         // Get the payer address for this data set
@@ -528,7 +527,7 @@ contract PandoraService is
         // Verify the data set exists in our mapping
         DataSetInfo storage info = dataSetInfo[dataSetId];
         require(info.pdpRailId != 0, "Data set not registered with payment system");
-        
+
         // Get the payer address for this data set
         address payer = info.payer;
         require(extraData.length > 0, "Extra data required for adding pieces");
@@ -555,11 +554,8 @@ contract PandoraService is
     {
         // Verify the data set exists in our mapping
         DataSetInfo storage info = dataSetInfo[dataSetId];
-        require(
-            info.pdpRailId != 0,
-            "Data set not registered with payment system"
-        );
-        
+        require(info.pdpRailId != 0, "Data set not registered with payment system");
+
         // Get the payer address for this data set
         address payer = info.payer;
 
@@ -737,20 +733,12 @@ contract PandoraService is
         if (dataSetInfo[dataSetId].withCDN) {
             uint256 cacheMissRailId = dataSetInfo[dataSetId].cacheMissRailId;
             uint256 newCacheMissRatePerEpoch = calculateCacheMissRatePerEpoch(totalBytes);
-            payments.modifyRailPayment(
-                cacheMissRailId,
-                newCacheMissRatePerEpoch,
-                0
-            );
+            payments.modifyRailPayment(cacheMissRailId, newCacheMissRatePerEpoch, 0);
             emit RailRateUpdated(dataSetId, cacheMissRailId, newCacheMissRatePerEpoch);
 
             uint256 cdnRailId = dataSetInfo[dataSetId].cdnRailId;
             uint256 newCDNRatePerEpoch = calculateCDNRatePerEpoch(totalBytes);
-            payments.modifyRailPayment(
-                cdnRailId,
-                newCDNRatePerEpoch,
-                0
-            );
+            payments.modifyRailPayment(cdnRailId, newCDNRatePerEpoch, 0);
             emit RailRateUpdated(dataSetId, cdnRailId, newCDNRatePerEpoch);
         }
     }
@@ -829,10 +817,11 @@ contract PandoraService is
      * @param ratePerTiBPerMonth The rate per TiB per month in the token's smallest unit
      * @return ratePerEpoch The calculated rate per epoch in the token's smallest unit
      */
-    function calculateStorageSizeBasedRatePerEpoch(
-        uint256 totalBytes,
-        uint256 ratePerTiBPerMonth
-    ) internal view returns (uint256) {
+    function calculateStorageSizeBasedRatePerEpoch(uint256 totalBytes, uint256 ratePerTiBPerMonth)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 numerator = totalBytes * ratePerTiBPerMonth;
         uint256 denominator = TIB_IN_BYTES * EPOCHS_PER_MONTH;
 
@@ -986,7 +975,8 @@ contract PandoraService is
     function getServicePrice() external view returns (ServicePricing memory pricing) {
         pricing = ServicePricing({
             pricePerTiBPerMonthNoCDN: STORAGE_PRICE_PER_TIB_PER_MONTH * (10 ** uint256(tokenDecimals)),
-            pricePerTiBPerMonthWithCDN: (STORAGE_PRICE_PER_TIB_PER_MONTH + CDN_PRICE_PER_TIB_PER_MONTH) * (10 ** uint256(tokenDecimals)),
+            pricePerTiBPerMonthWithCDN: (STORAGE_PRICE_PER_TIB_PER_MONTH + CDN_PRICE_PER_TIB_PER_MONTH)
+                * (10 ** uint256(tokenDecimals)),
             tokenAddress: usdfcTokenAddress,
             epochsPerMonth: EPOCHS_PER_MONTH
         });
@@ -999,15 +989,15 @@ contract PandoraService is
      * @return cdnServiceFee Service fee with CDN service (per TiB per month)
      * @return spPaymentWithCDN SP payment with CDN service (per TiB per month)
      */
-    function getEffectiveRates() external view returns (
-        uint256 basicServiceFee,
-        uint256 spPaymentBasic, 
-        uint256 cdnServiceFee,
-        uint256 spPaymentWithCDN
-    ) {
+    function getEffectiveRates()
+        external
+        view
+        returns (uint256 basicServiceFee, uint256 spPaymentBasic, uint256 cdnServiceFee, uint256 spPaymentWithCDN)
+    {
         uint256 basicTotal = STORAGE_PRICE_PER_TIB_PER_MONTH * (10 ** uint256(tokenDecimals));
-        uint256 cdnTotal = (STORAGE_PRICE_PER_TIB_PER_MONTH + CDN_PRICE_PER_TIB_PER_MONTH) * (10 ** uint256(tokenDecimals));
-        
+        uint256 cdnTotal =
+            (STORAGE_PRICE_PER_TIB_PER_MONTH + CDN_PRICE_PER_TIB_PER_MONTH) * (10 ** uint256(tokenDecimals));
+
         // Basic service (5% commission = 0.1 USDFC service, 1.9 USDFC to SP)
         basicServiceFee = (basicTotal * basicServiceCommissionBps) / COMMISSION_MAX_BPS;
         spPaymentBasic = basicTotal - basicServiceFee;

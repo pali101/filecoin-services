@@ -191,7 +191,7 @@ contract PandoraServiceTest is Test {
     address public client;
     address public storageProvider;
     address public filCDN;
-    
+
     // Additional test accounts for registry tests
     address public sp1;
     address public sp2;
@@ -237,7 +237,7 @@ contract PandoraServiceTest is Test {
         client = address(0xf1);
         storageProvider = address(0xf2);
         filCDN = address(0xf3);
-        
+
         // Additional accounts for registry tests
         sp1 = address(0xf3);
         sp2 = address(0xf4);
@@ -305,11 +305,7 @@ contract PandoraServiceTest is Test {
             address(mockUSDFC),
             "USDFC token address should be set correctly"
         );
-        assertEq(
-            pdpServiceWithPayments.filCDNAddress(),
-            filCDN,
-            "FilCDN address should be set correctly"
-        );
+        assertEq(pdpServiceWithPayments.filCDNAddress(), filCDN, "FilCDN address should be set correctly");
         assertEq(
             pdpServiceWithPayments.operatorCommissionBps(),
             initialOperatorCommissionBps,
@@ -1512,7 +1508,7 @@ contract PandoraServiceSignatureTest is Test {
     uint256 public wrongSignerPrivateKey;
     uint256 public filCDNPrivateKey;
     address public filCDN;
-    
+
     function setUp() public {
         // Set up test accounts with known private keys
         payerPrivateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
@@ -1523,7 +1519,7 @@ contract PandoraServiceSignatureTest is Test {
 
         filCDNPrivateKey = 0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef;
         filCDN = vm.addr(filCDNPrivateKey);
-        
+
         creator = address(0xf2);
 
         // Deploy mock contracts
@@ -1615,11 +1611,11 @@ contract PandoraServiceUpgradeTest is Test {
 
     address public deployer;
     address public filCDN;
-    
+
     function setUp() public {
         deployer = address(this);
         filCDN = address(0xf2);
-        
+
         // Deploy mock contracts
         mockUSDFC = new MockERC20();
         mockPDPVerifier = new MockPDPVerifier();
